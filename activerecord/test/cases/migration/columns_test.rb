@@ -121,6 +121,19 @@ module ActiveRecord
         end
       end
 
+      def test_rename_column_with_multi_column_index_to_a_column_with_an_excessively_long_index_name_for_postgres
+        add_column "test_models", :recreational_vehicle_length, :integer
+        add_column "test_models", :recreational_vehicle_make, :string, limit: 100
+        add_index "test_models", ["recreational_vehicle_make", "recreational_vehicle_length"], unique: true
+
+        rename_column "test_models", "recreational_vehicle_make", "recreational_vehicle_manufacturer"
+        if current_adapter? :OracleAdapter
+          assert_equal ["i_test_models_hat_recreational_vehicle_length_recreational_vehicle_manufacturer"], connection.indexes("test_models").map(&:name)
+        else
+          assert_equal ["index_test_models_on_recreational_vehicle_manufacturer_and_recreational_vehicle_length"], connection.indexes("test_models").map(&:name)
+        end
+      end
+
       def test_rename_column_does_not_rename_custom_named_index
         add_column "test_models", :hat_name, :string
         add_index :test_models, :hat_name, name: "idx_hat_name"
